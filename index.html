@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dot Battle - Game & Instructions</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background-image: linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%);
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    #message {
+      margin: 10px;
+      font-size: 1.2em;
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(6, 60px);
+      grid-gap: 5px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .cell {
+      width: 60px;
+      height: 60px;
+      background: #fff;
+      border: 2px solid #ccc;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2em;
+    }
+    .cell.disabled {
+      cursor: not-allowed;
+    }
+    .black {
+      color: #000;
+    }
+    .white {
+      color: #eee;
+      text-shadow: 0 0 5px #000;
+    }
+    /* Winning animation: simple blink effect */
+    @keyframes blink {
+      0%, 100% { background-color: yellow; }
+      50% { background-color: orange; }
+    }
+    .win {
+      animation: blink 1s infinite;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+      margin: 5px;
+    }
+    /* Container styles */
+    .container {
+      display: none;
+    }
+    #gameContainer {
+      display: block;
+    }
+    /* How To Play Styles */
+    #instructionsContainer {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      line-height: 1.6;
+      text-align: left;
+    }
+    #instructionsContainer h1,
+    #instructionsContainer h2 {
+      text-align: center;
+    }
+    #instructionsContainer ul {
+      padding-left: 20px;
+    }
+    /* Ad Container Styles */
+    #adContainer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2em;
+      z-index: 100;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Game Container -->
+  <div id="gameContainer" class="container">
+    <h1>Dot Battle</h1>
+    <div id="message">Current Turn: <span id="currentPlayer">Black (⚫)</span></div>
+    <div id="board"></div>
+    <button id="restartBtn">Restart Game</button>
+    <button id="howToPlayBtn">How to Play</button>
+  </div>
+
+  <!-- Instructions Container -->
+  <div id="instructionsContainer" class="container">
+    <h1>How to Play Dot Battle</h1>
+    <p>Welcome to <strong>Dot Battle</strong> – a strategic 1v1 game where the goal is to create the longest continuous chain of your dots on a 6x6 grid!</p>
+    
+    <h2>1. Game Overview</h2>
+    <p>Two players take turns placing their colored dots on an empty grid:</p>
+    <ul>
+      <li><strong>Black Dots (⚫)</strong> for one player.</li>
+      <li><strong>White Dots (⚪)</strong> for the other player.</li>
+    </ul>
+    <p>Your aim is to form the longest connected chain of your dots. Chains connect horizontally, vertically, or diagonally.</p>
+    
+    <h2>2. Game Setup</h2>
+    <p>The game board is a 6x6 grid. Every cell is empty at the start. Both players begin near the center (choose your spots during play).</p>
+    
+    <h2>3. Taking Turns</h2>
+    <p>Players alternate turns. On your turn, click on an empty cell to place your dot. The current player is shown at the top of the game screen.</p>
+    
+    <h2>4. Building Your Chain</h2>
+    <p>
+      <strong>Connected Dots:</strong> Dots connect if they touch horizontally, vertically, or diagonally.<br>
+      <strong>Strategic Placement:</strong> Extend your chain and block your opponent at the same time.
+    </p>
+    
+    <h2>5. Winning the Game</h2>
+    <p>
+      Once all cells are filled, the game calculates the longest continuous chain for both players. The player with the longest chain wins! In case of a tie, it’s a draw. Winning cells will blink to celebrate the victory.
+    </p>
+    
+    <h2>6. Restarting</h2>
+    <p>
+      Use the <strong>Restart Game</strong> button on the main game page to start a new match at any time.
+    </p>
+    
+    <button id="backBtn">Back to Game</button>
+  </div>
+
+  <!-- Ad Container -->
+  <div id="adContainer">
+    <!-- Placeholder for Advertisement -->
+    <div>Advertisement</div>
+  </div>
+
+  <script>
+    // Elements
+    const gameContainer = document.getElementById('gameContainer');
+    const instructionsContainer = document.getElementById('instructionsContainer');
+    const boardEl = document.getElementById('board');
+    const messageEl = document.getElementById('message');
+    const currentPlayerEl = document.getElementById('currentPlayer');
+    const restartBtn = document.getElementById('restartBtn');
+    const howToPlayBtn = document.getElementById('howToPlayBtn');
+    const backBtn = document.getElementById('backBtn');
+    const adContainer = document.getElementById('adContainer');
+
+    const gridSize = 6;
+    let board = [];
+    let currentPlayer = 'black'; // 'black' or 'white'
+    let gameOver = false;
+    let winningCells = []; // To track winning cells for animation
+
+    // Initialize board state and UI
+    function initGame() {
+      board = [];
+      boardEl.innerHTML = '';
+      gameOver = false;
+      winningCells = [];
+      currentPlayer = 'black';
+      currentPlayerEl.textContent = "Black (⚫)";
+      for (let i = 0; i < gridSize; i++) {
+        board[i] = [];
+        for (let j = 0; j < gridSize; j++) {
+          board[i][j] = '';
+          const cell = document.createElement('div');
+          cell.classList.add('cell');
+          cell.dataset.row = i;
+          cell.dataset.col = j;
+          cell.addEventListener('click', onCellClick);
+          boardEl.appendChild(cell);
+        }
+      }
+    }
+
+    function onCellClick(e) {
+      if (gameOver) return;
+      const cell = e.target;
+      const row = parseInt(cell.dataset.row);
+      const col = parseInt(cell.dataset.col);
+      if (board[row][col] !== '') return;
+
+      // Place dot based on current player
+      board[row][col] = currentPlayer;
+      cell.textContent = currentPlayer === 'black' ? '⚫' : '⚪';
+      cell.classList.add(currentPlayer);
+
+      // Check if board is full
+      if (isBoardFull()) {
+        gameOver = true;
+        determineWinner();
+        return;
+      }
+      // Toggle player
+      currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+      currentPlayerEl.textContent = currentPlayer === 'black' ? "Black (⚫)" : "White (⚪)";
+    }
+
+    function isBoardFull() {
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          if (board[i][j] === '') return false;
+        }
+      }
+      return true;
+    }
+
+    // Check connected chain for each cell using DFS
+    function getLongestChain(player) {
+      const visited = Array.from({ length: gridSize }, () => Array(gridSize).fill(false));
+      let maxChain = 0;
+      let maxChainCells = [];
+
+      const directions = [
+        [-1, 0], [1, 0], [0, -1], [0, 1],
+        [-1, -1], [-1, 1], [1, -1], [1, 1]
+      ];
+
+      function dfs(r, c, chainCells) {
+        visited[r][c] = true;
+        chainCells.push({ r, c });
+        let count = 1;
+        for (const [dr, dc] of directions) {
+          const nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < gridSize && nc >= 0 && nc < gridSize &&
+              !visited[nr][nc] && board[nr][nc] === player) {
+            count += dfs(nr, nc, chainCells);
+          }
+        }
+        return count;
+      }
+
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          if (!visited[i][j] && board[i][j] === player) {
+            let chainCells = [];
+            let chainLength = dfs(i, j, chainCells);
+            if (chainLength > maxChain) {
+              maxChain = chainLength;
+              maxChainCells = chainCells.slice();
+            }
+          }
+        }
+      }
+      return { maxChain, maxChainCells };
+    }
+
+    function determineWinner() {
+      const blackResult = getLongestChain('black');
+      const whiteResult = getLongestChain('white');
+      let winner;
+      if (blackResult.maxChain > whiteResult.maxChain) {
+        winner = 'Black (⚫)';
+        winningCells = blackResult.maxChainCells;
+      } else if (whiteResult.maxChain > blackResult.maxChain) {
+        winner = 'White (⚪)';
+        winningCells = whiteResult.maxChainCells;
+      } else {
+        winner = "It's a draw!";
+      }
+      showResult(winner);
+    }
+
+    function showResult(result) {
+      if (result === "It's a draw!") {
+        messageEl.textContent = result;
+      } else {
+        messageEl.textContent = result + " wins!";
+        animateWinningCells();
+      }
+      // Disable further moves
+      const cells = document.querySelectorAll('.cell');
+      cells.forEach(cell => cell.classList.add('disabled'));
+    }
+
+    // Add CSS animation to winning cells
+    function animateWinningCells() {
+      winningCells.forEach(({ r, c }) => {
+        const cell = document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+        if (cell) {
+          cell.classList.add('win');
+        }
+      });
+    }
+
+    // Function to simulate showing an ad and then restarting the game
+    function restartGameWithAd() {
+      // Show ad container
+      adContainer.style.display = 'flex';
+      // Simulate ad display for 3 seconds (adjust time as needed)
+      setTimeout(() => {
+        adContainer.style.display = 'none';
+        initGame();
+      }, 3000);
+    }
+
+    // Button event listeners
+    restartBtn.addEventListener('click', restartGameWithAd);
+    howToPlayBtn.addEventListener('click', () => {
+      gameContainer.style.display = 'none';
+      instructionsContainer.style.display = 'block';
+    });
+    backBtn.addEventListener('click', () => {
+      instructionsContainer.style.display = 'none';
+      gameContainer.style.display = 'block';
+    });
+
+    // Start game on page load
+    initGame();
+  </script>
+</body>
+</html>
