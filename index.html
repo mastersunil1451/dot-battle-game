@@ -131,21 +131,30 @@
     }
 
     /* Ad Container Styles */
-    #adContainer {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.8);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: clamp(1.5rem, 5vw, 2rem);
-      z-index: 100;
+    #ad-overlay {
+      height: 290px;
+      width: 300px;
+      position: absolute;
+      background-color: white;
       display: none;
+      transform: translate(-50%, -50%);
+      left: 50%;
+      top: 50%;
+
+      p {
+        color: #000000;
+        font-size: 13px;
+        position: absolute;
+        bottom: -16px;
+        left: 0;
+        padding: 5px;
+      }
     }
+    #close-start-btn {
+        position: absolute;
+        right: 0;
+        top: 0;
+      }
   </style>
 </head>
 <body>
@@ -187,10 +196,23 @@
     </p>
     <button id="backBtn">Back to Game</button>
   </div>
-  <!-- Ad Container -->
-  <div id="adContainer">
-    <div>Advertisement</div>
+  <div id="ad-overlay">
+    <button id="close-start-btn">X</button>
+    <p>Visiting this small ad helps us to grow and update. Thanks for your support! 💖</p>
+
+  <!-- Adsterra Ads Code -->
+    <script type="text/javascript">
+      atOptions = {
+        'key' : '15cd165eb5c6f2b40807bacca76d739c',
+        'format' : 'iframe',
+        'height' : 250,
+        'width' : 300,
+        'params' : {}
+      };
+    </script>
+    <script type="text/javascript" src="//www.highperformanceformat.com/15cd165eb5c6f2b40807bacca76d739c/invoke.js"></script>
   </div>
+  
   <script>
     // Elements
     const gameContainer = document.getElementById('gameContainer');
@@ -202,6 +224,8 @@
     const howToPlayBtn = document.getElementById('howToPlayBtn');
     const backBtn = document.getElementById('backBtn');
     const adContainer = document.getElementById('adContainer');
+    const adoverlay = document.getElementById('ad-overlay');
+    const closeBtn = document.getElementById('close-start-btn');
     const gridSize = 6;
     let board = [];
     let currentPlayer = 'black'; 
@@ -209,6 +233,7 @@
     let winningCells = []; 
 
     function initGame() {
+      adoverlay.style.display = 'none';
       board = [];
       boardEl.innerHTML = '';
       gameOver = false;
@@ -324,12 +349,10 @@
     }
 
     function restartGameWithAd() {
-      adContainer.style.display = 'flex';
-      setTimeout(() => {
-        adContainer.style.display = 'none';
-        initGame();
-      }, 3000);
+      //initGame();
+      adoverlay.style.display = 'block';
     }
+    closeBtn.addEventListener('click', initGame);
 
     restartBtn.addEventListener('click', restartGameWithAd);
     howToPlayBtn.addEventListener('click', () => {
